@@ -2,21 +2,31 @@
 
 import serial
 import time
-from sys import argv
+import argparse
 
-port = serial.Serial("/dev/ttyUSB0", 115200)
+parser = argparse.ArgumentParser(
+    description="upload files to a device using only the REPL"
+)
+parser.add_argument('--port', default='/dev/ttyUSB0', help='serial port device')
+parser.add_argument('--baud', default=115200, type=int, help='port speed in baud')
+parser.add_argument('--delay', default=100.0, type=float, help='delay between lines (ms)')
+parser.add_argument('files', nargs='+', type=argparse.FileType('rb'))
 
-for fn in argv[1:]:
-  fh = open(fn, "r")
+args = parser.parse_args()
 
-  port.write('_fh = open(%s, "w")\r' % repr(fn))
+port = serial.Serial(args.port, args.baud)
+
+for fh in args.files:
+
+  port.write('_fh = open(%s, "w")\r' % repr(fh.name))
 
   while True:
     s = fh.read(50)
     if len(s) == 0: break
     port.write("_fh.write(%s)\r" % repr(s))
-    time.sleep(0.1)
+    time.sleep(args.delay/1000.0)
 
   port.write('_fh.close()\r')
+  fh.close()
 
 port.close()
