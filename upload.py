@@ -3,6 +3,7 @@
 import serial
 import time
 import argparse
+import os.path
 
 parser = argparse.ArgumentParser(
     description="upload files to a device using only the REPL"
@@ -21,8 +22,8 @@ if args.interrupt:
   port.write('\x03')
 
 for fh in args.files:
-
-  port.write('_fh = open(%s, "w")\r' % repr(fh.name))
+  path, name = os.path.split(fh.name)
+  port.write('_fh = open(%s, "w")\r' % repr(name))
 
   while True:
     s = fh.read(50)
