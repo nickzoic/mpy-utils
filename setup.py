@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
   name='mpy-utils',
-  version='0.1.1',
+  version='0.1.2',
   description='MicroPython development utility programs',
   url='http://github.com/nickzoic/mpy-utils/',
   author='Nick Moore',
@@ -12,6 +12,7 @@ setup(
   scripts=[
     "bin/mpy-fuse",
     "bin/mpy-upload",
+    "bin/mpy-sync",
   ],
   install_requires=[
     'fusepy>=2',
