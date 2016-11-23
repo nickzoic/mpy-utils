@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import argparse
+
+from mpy_utils.replcontrol import ReplControl
+from mpy_utils.replfuseops import ReplFuseOps
+
+parser = argparse.ArgumentParser(
+    description="FUSE mount a device using only the REPL"
+)
+parser.add_argument('--port', default='/dev/ttyUSB0', help='serial port device')
+parser.add_argument('--baud', default=115200, type=int, help='port speed in baud')
+parser.add_argument('--delay', default=100.0, type=float, help='delay between lines (ms)')
+parser.add_argument('mount_point')
+args = parser.parse_args()
+
+repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay)
+
+fuse.FUSE(
+    operations=ReplFuseOps(repl_control),
+    fsname="mpy-fuse:%s" % args.port,
+    mountpoint=args.mount_point,
+    nothreads=True,
+    foreground=True
+)
+
