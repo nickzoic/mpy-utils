@@ -9,7 +9,10 @@ setup(
   author_email='nick@zoic.org',
   license="MIT",
   packages=["mpy_utils"],
-  scripts=["bin/mpy-fuse"],
+  scripts=[
+    "bin/mpy-fuse",
+    "bin/mpy-upload",
+  ],
   install_requires=[
     'fusepy>=2',
     'pyserial>=3',
