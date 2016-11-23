@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import fuse
 
 from mpy_utils.replcontrol import ReplControl
 from mpy_utils.replfuseops import ReplFuseOps

@@ -2,6 +2,7 @@ import errno
 import stat
 import posix
 import fuse
+import os
 
 BUFSIZ = 50
 
