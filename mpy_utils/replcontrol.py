@@ -2,10 +2,11 @@ import serial
 
 class ReplControl(object):
     
-  def __init__(self, port='/dev/ttyUSB0', baud=115200, delay=0):
+  def __init__(self, port='/dev/ttyUSB0', baud=115200, delay=0, debug=False):
     self.port = serial.Serial(port, baud, timeout=2)
     self.buffer = b""
     self.delay = delay
+    self.debug = debug
     self.initialize()
  
   def response(self, end=b"\x04"):
@@ -22,22 +23,22 @@ class ReplControl(object):
     # break, break, reboot, raw mode
     self.port.write(b"\x03\x03\x04\x01");
     while (self.port.read(100)): pass
-    #self.port.write(b"import os, sys\r")
-    #s = self.port.read(100)
-    #if not s.endswith(b"\r\n>>> "): raise("wot")
+
+  def reset(self):
+    self.port.write(b"\x02\x03\x03")
 
   def command(self, cmd):
-    print(">>> %s" % cmd)
+    if self.debug: print(">>> %s" % cmd)
     self.port.write(cmd.encode("ASCII") + b"\x04")
     ret = self.response()
     err = self.response(b"\x04>")
 
     if ret.startswith(b'OK'):
       if err:
-        print("<<< %s" % err)
+        if self.debug: print("<<< %s" % err)
         return err
       elif len(ret) > 2:
-        print("<<< %s" % ret[2:])
+        if self.debug: print("<<< %s" % ret[2:])
         try:
           return eval(ret[2:], {"__builtins__": {}}, {})
         except SyntaxError as e:
