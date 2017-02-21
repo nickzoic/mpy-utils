@@ -56,7 +56,7 @@ class ReplFuseOps(fuse.Operations):
             "f_blocks": r[2],
             "f_bfree": r[3],
             "f_bavail": r[4],
-            "f_flag": os.STNOATIME | os.ST_NODEV | os.ST_NODIRATIME | os.ST_NOSUID | os.ST_SYNCHRONOUS
+            "f_flag": os.ST_NOATIME | os.ST_NODEV | os.ST_NODIRATIME | os.ST_NOSUID | os.ST_SYNCHRONOUS
         }
         #return dict(zip(['f_bsize','f_frsize','f_blocks','f_bfree','f_bavail','f_files','f_ffree','f_favail','f_fsid','f_flag'], r))
 
