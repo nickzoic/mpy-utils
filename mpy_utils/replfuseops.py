@@ -6,103 +6,120 @@ import os
 
 BUFSIZ = 50
 
+def join_path(base, path):
+    if path == '/': return base
+    else: return base + path
+
 class ReplFuseOps(fuse.Operations):
-    def __init__(self, remote):
+    def __init__(self, remote, base_path=''):
         self.remote = remote
+        self.base_path = base_path
         self.filehandles = []
         self.remote.command("import os")
 
     # Filesystem methods
     # ==================
 
-    def access(self, path, mode):
-        return 0
-
-    def chmod(self, path, mode):
-        raise fuse.FuseOSError(errno.EACCES)
-
-    def chown(self, path, uid, gid):
-        raise fuse.FuseOSError(errno.EACCES)
-
     def getattr(self, path, fh=None):
-        s = self.remote.function('os.stat', path)
+        s = self.remote.function('os.stat', join_path(self.base_path, path))
         if type(s) is bytes:
            raise fuse.FuseOSError(errno.ENOENT)
 
-        mode = (stat.S_IFDIR | 0o755) if stat.S_ISDIR(s[0]) else (stat.S_IFREG | 0o644);
+        mode = (stat.S_IFDIR | 0o750) if stat.S_ISDIR(s[0]) else (stat.S_IFREG | 0o640);
         return {
           'st_mode': mode,
           'st_nlink': 2,
-          'st_size': s[6] or 4096,
+          'st_size': s[6],
           'st_uid': os.getuid(),
           'st_gid': os.getgid()
         }
 
     def readdir(self, path, fh):
         dirents = ['.', '..']
-        dirents.extend(self.remote.function('os.listdir', path))
+        dirents.extend(self.remote.function('os.listdir', join_path(self.base_path, path)))
         return dirents
 
     def readlink(self, path):
         return path
 
     def rmdir(self, path):
-        return self.remote.function('os.rmdir', path)
+        return self.remote.function('os.rmdir', join_path(self.base_path, path))
 
     def mkdir(self, path, mode):
-        return self.remote.function('os.mkdir', path)
+        return self.remote.function('os.mkdir', join_path(self.base_path, path))
 
     def statfs(self, path):
-        r = self.remote.function('os.statvfs', path)
-        return dict(zip(['f_bsize','f_frsize','f_blocks','f_bfree','f_bavail','f_files','f_ffree','f_favail','f_fsid','f_flag'], r))
+        r = self.remote.function('os.statvfs', join_path(self.base_path, path))
+        return {
+            "f_bsize": r[0],
+            "f_frsize": r[1],
+            "f_blocks": r[2],
+            "f_bfree": r[3],
+            "f_bavail": r[4],
+            "f_flag": os.STNOATIME | os.ST_NODEV | os.ST_NODIRATIME | os.ST_NOSUID | os.ST_SYNCHRONOUS
+        }
+        #return dict(zip(['f_bsize','f_frsize','f_blocks','f_bfree','f_bavail','f_files','f_ffree','f_favail','f_fsid','f_flag'], r))
 
     def unlink(self, path):
-        return self.remote.function('os.remove', path)
+        return self.remote.function('os.remove', join_path(self.base_path, path))
 
     def rename(self, old, new):
-        return self.remote.function('os.rename', old, new)
+        return self.remote.function('os.rename', join_path(self.base_path, old), join_path(self.base_path, new))
 
     # File methods
     # ============
-
    
     def _open(self, path, mode):
         num = len(self.filehandles)
-        self.filehandles.append(self.remote.variable('open', path, mode))
+        var = self.remote.variable('open', join_path(self.base_path, path), mode)
+        self.filehandles.append(( var, path ))
         return num
  
     def open(self, path, flags):
-        mode = "rb" if (flags & posix.O_RDONLY) else "rb+"
+        if flags & posix.O_WRONLY: mode = "wb"
+        elif flags & posix.O_RDWR: mode = "rb+"
+        else: mode = "rb"
         return self._open(path, mode)
 
     def create(self, path, mode, fi=None):
         return self._open(path, "wb")
 
     def read(self, path, length, offset, fh):
-        self.filehandles[fh].method('seek', offset)
+        self.filehandles[fh][0].method('seek', offset)
         buf = b''
         while len(buf) < length:
             size = length - len(buf) if length - len(buf) < BUFSIZ else BUFSIZ;
-            r = self.filehandles[fh].method('read', size)
+            r = self.filehandles[fh][0].method('read', int(size))
             if r is None or len(r) == 0: break
             buf += r
-            print(len(buf))
         return buf
 
     def write(self, path, buf, offset, fh):
         length = len(buf)
-        self.filehandles[fh].method('seek', offset)
+        self.filehandles[fh][0].method('seek', offset)
         total = 0
         while total < length:
             size = length - total if length - total < BUFSIZ else BUFSIZ;
-            total += self.filehandles[fh].method('write', buf[total:total+size])
+            total += self.filehandles[fh][0].method('write', buf[total:total+size])
         return total
 
+    def truncate(self, path, size):
+        if size == 0:
+            fh = self._open(path, "wb")
+            self.filehandles[fh][0].method('close')
+            self.filehandles[fh] = None
+        else:
+            # not implemented
+            raise fuse.FuseOSError(errno.ENOTSUP)
+
     def flush(self, path, fh):
-        return self.filehandles[fh].method('flush')
+        return self.filehandles[fh][0].method('flush')
 
     def release(self, path, fh):
-        return self.filehandles[fh].method('close')
+        self.filehandles[fh][0].method('close')
+        self.filehandles[fh] = None
 
     def fsync(self, path, fdatasync, fh):
-        raise fuse.FuseOSError(errno.EACCES)
+        for fh in self.filehandles:
+            if fh is not None and fh[1] == path:
+                fh[0].method('flush')

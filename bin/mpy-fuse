@@ -11,14 +11,16 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--port', default='/dev/ttyUSB0', help='serial port device')
 parser.add_argument('--baud', default=115200, type=int, help='port speed in baud')
+parser.add_argument('--base', default='/', help='base path on device')
 parser.add_argument('--delay', default=100.0, type=float, help='delay between lines (ms)')
+parser.add_argument('--debug', default=False, action='store_true', help='print debugging info')
 parser.add_argument('mount_point')
 args = parser.parse_args()
 
-repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay)
+repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
 
 fuse.FUSE(
-    operations=ReplFuseOps(repl_control),
+    operations=ReplFuseOps(repl_control, base_path=args.base),
     fsname="mpy-fuse:%s" % args.port,
     mountpoint=args.mount_point,
     nothreads=True,
