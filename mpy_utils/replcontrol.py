@@ -20,9 +20,9 @@ class ReplControl(object):
         pass
         
   def initialize(self):
-    # break, break, reboot, raw mode
-    self.port.write(b"\x03\x03\x04\x01");
-    while (self.port.read(100)): pass
+    # break, break, raw mode, reboot
+    self.port.write(b"\x03\x03\x01\x04")
+    while self.port.read_all(): pass
 
   def reset(self):
     self.port.write(b"\x02\x03\x03")
