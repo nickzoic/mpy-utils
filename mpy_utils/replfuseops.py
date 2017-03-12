@@ -7,13 +7,6 @@ import os
 BUFSIZ = 50
 
 
-def join_path(base, path):
-    if path == '/':
-        return base
-    else:
-        return base + path
-
-
 class ReplFuseOps(fuse.Operations):
     def __init__(self, remote, base_path=''):
         self.remote = remote
@@ -25,7 +18,7 @@ class ReplFuseOps(fuse.Operations):
     # ==================
 
     def getattr(self, path, fh=None):
-        s = self.remote.function('os.stat', join_path(self.base_path, path))
+        s = self.remote.function('os.stat', os.path.join(self.base_path, path))
         if type(s) is bytes:
             raise fuse.FuseOSError(errno.ENOENT)
 
@@ -40,20 +33,20 @@ class ReplFuseOps(fuse.Operations):
 
     def readdir(self, path, fh):
         dirents = ['.', '..']
-        dirents.extend(self.remote.function('os.listdir', join_path(self.base_path, path)))
+        dirents.extend(self.remote.function('os.listdir', os.path.join(self.base_path, path)))
         return dirents
 
     def readlink(self, path):
         return path
 
     def rmdir(self, path):
-        return self.remote.function('os.rmdir', join_path(self.base_path, path))
+        return self.remote.function('os.rmdir', os.path.join(self.base_path, path))
 
     def mkdir(self, path, mode):
-        return self.remote.function('os.mkdir', join_path(self.base_path, path))
+        return self.remote.function('os.mkdir', os.path.join(self.base_path, path))
 
     def statfs(self, path):
-        r = self.remote.function('os.statvfs', join_path(self.base_path, path))
+        r = self.remote.function('os.statvfs', os.path.join(self.base_path, path))
         return {
             "f_bsize": r[0],
             "f_frsize": r[1],
@@ -64,17 +57,17 @@ class ReplFuseOps(fuse.Operations):
         }
 
     def unlink(self, path):
-        return self.remote.function('os.remove', join_path(self.base_path, path))
+        return self.remote.function('os.remove', os.path.join(self.base_path, path))
 
     def rename(self, old, new):
-        return self.remote.function('os.rename', join_path(self.base_path, old), join_path(self.base_path, new))
+        return self.remote.function('os.rename', os.path.join(self.base_path, old), os.path.join(self.base_path, new))
 
     # File methods
     # ============
 
     def _open(self, path, mode):
         num = len(self.filehandles)
-        var = self.remote.variable('open', join_path(self.base_path, path), mode)
+        var = self.remote.variable('open', os.path.join(self.base_path, path), mode)
         self.filehandles.append((var, path))
         return num
 
