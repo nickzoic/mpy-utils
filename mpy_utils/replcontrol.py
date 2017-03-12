@@ -1,4 +1,5 @@
 import serial
+import atexit
 
 class ReplControl(object):
     
@@ -8,7 +9,8 @@ class ReplControl(object):
     self.delay = delay
     self.debug = debug
     self.initialize()
- 
+    atexit.register(self.reset)
+
   def response(self, end=b"\x04"):
     while True:
       bytes_to_read = self.port.inWaiting()
@@ -25,7 +27,7 @@ class ReplControl(object):
     while self.port.read_all(): pass
 
   def reset(self):
-    self.port.write(b"\x02\x03\x03")
+    self.port.write(b"\x02\x03\x03\x04")
 
   def command(self, cmd):
     if self.debug: print(">>> %s" % cmd)
