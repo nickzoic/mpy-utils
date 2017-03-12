@@ -3,13 +3,14 @@ import atexit
 
 
 class ReplControl(object):
-    def __init__(self, port='/dev/ttyUSB0', baud=115200, delay=0, debug=False):
+    def __init__(self, port='/dev/ttyUSB0', baud=115200, delay=0, debug=False, reset=True):
         self.port = serial.Serial(port, baud, timeout=2)
         self.buffer = b""
         self.delay = delay
         self.debug = debug
         self.initialize()
-        atexit.register(self.reset)
+        if reset:
+            atexit.register(self.reset)
 
     def response(self, end=b"\x04"):
         while True:

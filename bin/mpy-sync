@@ -16,7 +16,7 @@ parser.add_argument('--reset', action='store_true', help='send soft reset (contr
 parser.add_argument('files', nargs='*', type=str)
 args = parser.parse_args()
 
-repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay)
+repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, reset=args.reset)
 
 
 def sync_files(files):
@@ -44,5 +44,3 @@ def copy_file(source, dest):
 
 sync_files([(f, os.path.split(f)[1]) for f in args.files] or [('.', '/')])
 
-if args.reset:
-    repl_control.reset()
