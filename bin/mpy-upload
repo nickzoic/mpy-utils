@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import serial
 import time
 import argparse
 import os.path
@@ -8,7 +7,7 @@ import os.path
 from mpy_utils.replcontrol import ReplControl
 
 parser = argparse.ArgumentParser(
-    description="upload files to a device using only the REPL"
+        description="upload files to a device using only the REPL"
 )
 parser.add_argument('--port', default='/dev/ttyUSB0', help='serial port device')
 parser.add_argument('--baud', default=115200, type=int, help='port speed in baud')
@@ -20,15 +19,17 @@ args = parser.parse_args()
 repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay)
 
 for fh in args.files:
-  path, name = os.path.split(fh.name)
-  rfh = repl_control.variable('open', name, "w")
+    path, name = os.path.split(fh.name)
+    rfh = repl_control.variable('open', name, "w")
 
-  while True:
-    s = fh.read(50)
-    if len(s) == 0: break
-    rfh.method('write', s)
-    time.sleep(args.delay/1000.0)
-  rfh.method('flush')
-  rfh.method('close')
+    while True:
+        s = fh.read(50)
+        if len(s) == 0:
+            break
+        rfh.method('write', s)
+        time.sleep(args.delay / 1000.0)
+    rfh.method('flush')
+    rfh.method('close')
 
-if args.reset: repl_control.reset()
+if args.reset:
+    repl_control.reset()
