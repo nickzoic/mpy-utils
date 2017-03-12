@@ -1,5 +1,6 @@
 import serial
 import atexit
+import time
 
 
 class ReplControl(object):
@@ -15,6 +16,8 @@ class ReplControl(object):
     def response(self, end=b"\x04"):
         while True:
             bytes_to_read = self.port.inWaiting()
+            if not bytes_to_read:
+                time.sleep(self.delay / 1000.0)
             self.buffer += self.port.read(bytes_to_read)
             try:
                 r, self.buffer = self.buffer.split(end, 1)
@@ -35,6 +38,7 @@ class ReplControl(object):
         if self.debug:
             print(">>> %s" % cmd)
         self.port.write(cmd.encode("ASCII") + b"\x04")
+        time.sleep(self.delay / 1000.0)
         ret = self.response()
         err = self.response(b"\x04>")
 
