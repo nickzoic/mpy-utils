@@ -1,0 +1,20 @@
+Source: mpy-utils
+Section: python
+Priority: optional
+Maintainer: Nick Moore <nick@zoic.org>
+Build-Depends: debhelper (>=9), dh-python, python3-all, python3-setuptools
+Standards-Version: 3.9.6
+Homepage: https://github.com/nickzoic/mpy-utils
+X-Python3-Version: >= 3.2
+
+Package: python3-mpy-utils
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}
+Description: Utility programs for Micropython (Python 3)
+ Utility programs for Micropython ...
+ .
+ mpy-upload : copy files in to a device using only the REPL.
+ mpy-sync : copy whole directory structure
+ mpy-fuse : mount a device into the filesystem using FUSE ...
+ .
+ This package installs the library for Python 3.
