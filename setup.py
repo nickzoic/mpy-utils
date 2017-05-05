@@ -13,6 +13,7 @@ setup(
     "bin/mpy-fuse",
     "bin/mpy-upload",
     "bin/mpy-sync",
+    "bin/mpy-watch",
   ],
   install_requires=[
     'fusepy>=2',
