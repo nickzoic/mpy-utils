@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+
+import serial
+import time
+import argparse
+import os
+import re
+import difflib
+
+from mpy_utils.replcontrol import ReplControl
+
+parser = argparse.ArgumentParser(
+    description="upload files to a device using only the REPL"
+)
+parser.add_argument('--port', default='/dev/ttyUSB0', help='serial port device')
+parser.add_argument('--baud', default=115200, type=int, help='port speed in baud')
+parser.add_argument('--delay', default=100.0, type=float, help='delay between lines (ms)')
+parser.add_argument('--reset', action='store_true', help='send soft reset (control-D) after upload')
+parser.add_argument('--debug', default=False, action='store_true', help='print debugging info')
+parser.add_argument('source_dir', nargs=1, type=str)
+args = parser.parse_args()
+
+repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
+repl_control.command("import os")
+
+path_re = re.compile(r"(/[^./][^/]+)*\.(py|html?|js|css|png|gif|jpe?g)$")
+
+def make_file_list(source_dir, dest_dir='/'):
+  for source in os.listdir(source_dir):
+    source_path = os.path.join(source_dir, source)
+    dest_path = os.path.join(dest_dir, source)
+    if os.path.isdir(source_path):
+      yield from make_file_list(source_path, dest_path)
+    elif path_re.match(dest_path):
+      yield (source_path, dest_path)
+
+temporary_file_name = "/.temporary"
+
+def sync_files(file_list, file_cache={}):
+
+  for source_path, dest_path in file_list:
+    source_mtime = os.stat(source_path).st_mtime
+    if source_path in file_cache and file_cache[source_path][0] == source_mtime: continue
+
+    dest_temp_fh = repl_control.variable('open', temporary_file_name, "wb")
+    source_text = open(source_path, "rb").read()
+
+    if source_path in file_cache:
+      cache_text = file_cache[source_path][1]
+      remote_fh = repl_control.variable('open', dest_path, "rb")
+      for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, cache_text, source_text).get_opcodes():
+        if args.debug: print("!!! %s %d %d %d %d" % (tag, i1, i2, j1, j2))
+        if tag == 'replace' or tag == 'insert':
+          for x in range(j1, j2, 50):
+            dest_temp_fh.method('write', source_text[x:min(x+50,j2)])
+            time.sleep(args.delay/1000.0)
+        elif tag == 'equal': 
+          repl_control.command("%s.seek(%d); %s.write(%s.read(%d))" % (
+            remote_fh.get_name(),
+            i1,
+            dest_temp_fh.get_name(),
+            remote_fh.get_name(),
+            j2 - j1
+          ))
+          time.sleep(args.delay/1000.0)
+      remote_fh.method('close')
+    else:
+      for x in range(0, len(source_text), 50):
+        dest_temp_fh.method('write', source_text[x:x+50])
+        time.sleep(args.delay/1000.0)
+
+    dest_temp_fh.method('flush')
+    dest_temp_fh.method('close')
+
+    repl_control.command('print(repr(open(%s).read()))' % repr(temporary_file_name))
+
+    repl_control.statement('os.remove', dest_path)
+    repl_control.statement('os.rename', temporary_file_name, dest_path)
+
+    file_cache[source_path] = (source_mtime, source_text)
+
+while True:
+  print("polling ...")
+
+  files = make_file_list(args.source_dir[0])
+
+  sync_files(files)
+      
+  time.sleep(1)
