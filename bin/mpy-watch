@@ -21,7 +21,6 @@ parser.add_argument('source_dir', nargs=1, type=str)
 args = parser.parse_args()
 
 repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
-repl_control.command("import os")
 
 path_re = re.compile(r"(/[^./][^/]+)*\.(py|html?|js|css|png|gif|jpe?g)$")
 
@@ -38,6 +37,8 @@ temporary_file_name = "/.temporary"
 
 def sync_files(file_list, file_cache={}):
 
+  initialized = False
+
   for source_path, dest_path in file_list:
     source_mtime = os.stat(source_path).st_mtime
     if source_path in file_cache and file_cache[source_path][0] == source_mtime: continue
@@ -45,13 +46,22 @@ def sync_files(file_list, file_cache={}):
     source_text = open(source_path, "rb").read()
     if source_path in file_cache and file_cache[source_path][1] == source_text: continue
 
+    if not initialized:
+      print("initializing ...")
+      repl_control.initialize()
+      repl_control.command("import os")
+      initialized = True
+
     dest_temp_fh = repl_control.variable('open', temporary_file_name, "wb")
 
     if source_path in file_cache:
       cache_text = file_cache[source_path][1]
 
       remote_fh = repl_control.variable('open', dest_path, "rb")
-      for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, cache_text, source_text).get_opcodes():
+      sequence_matcher = difflib.SequenceMatcher(None, cache_text, source_text)
+      print("patching %s => %s (%d bytes, %f ratio)" % (source_path, dest_path, len(source_text), sequence_matcher.ratio()))
+
+      for tag, i1, i2, j1, j2 in sequence_matcher.get_opcodes():
         if tag == 'replace' or tag == 'insert':
           for x in range(j1, j2, 50):
             dest_temp_fh.method('write', source_text[x:min(x+50,j2)])
@@ -66,8 +76,10 @@ def sync_files(file_list, file_cache={}):
           ))
           time.sleep(args.delay/1000.0)
       remote_fh.method('close')
+      del remote_fh
 
     else:
+      print("copying %s => %s (%d bytes)" % (source_path, dest_path, len(source_text)))
 
       for x in range(0, len(source_text), 50):
         dest_temp_fh.method('write', source_text[x:x+50])
@@ -75,15 +87,18 @@ def sync_files(file_list, file_cache={}):
 
     dest_temp_fh.method('flush')
     dest_temp_fh.method('close')
+    del dest_temp_fh
 
     repl_control.statement('os.remove', dest_path)
     repl_control.statement('os.rename', temporary_file_name, dest_path)
 
     file_cache[source_path] = [source_mtime, source_text]
 
-while True:
-  print("polling ...")
+  if initialized and args.reset:
+    print("resetting ...")
+    repl_control.reset()
 
+while True:
   files = make_file_list(args.source_dir[0])
 
   sync_files(files)
