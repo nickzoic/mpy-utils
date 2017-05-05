@@ -1,4 +1,5 @@
 import serial
+import string
 
 class ReplControl(object):
     
@@ -59,12 +60,11 @@ class ReplControl(object):
 
 class ReplControlVariable(object):
  
-  counter = 0
+  names = [ '_%s%s' % (x,y) for x in string.ascii_lowercase for y in string.ascii_lowercase ]
 
   def __init__(self, control, func, *args):
     self.control = control
-    self.name = '__v%d' % self.__class__.counter
-    self.__class__.counter += 1
+    self.name = self.__class__.names.pop(0)
     self.control.statement("%s=%s" % (self.name, func), *args)
 
   def get_name(self):
@@ -75,3 +75,4 @@ class ReplControlVariable(object):
        
   def __del__(self):
     self.control.command("del %s" % self.name)
+    self.__class__.names.append(self.name)
