@@ -6,6 +6,7 @@ import argparse
 import os
 import re
 import difflib
+import stat
 
 from mpy_utils.replcontrol import ReplControl
 
@@ -16,13 +17,15 @@ parser.add_argument('--port', default='/dev/ttyUSB0', help='serial port device')
 parser.add_argument('--baud', default=115200, type=int, help='port speed in baud')
 parser.add_argument('--delay', default=100.0, type=float, help='delay between lines (ms)')
 parser.add_argument('--reset', action='store_true', help='send soft reset (control-D) after upload')
+parser.add_argument('--delete', default=False, action='store_true', help='delete files not in source')
+parser.add_argument('--download', default=False, action='store_true', help='download files first')
 parser.add_argument('--debug', default=False, action='store_true', help='print debugging info')
 parser.add_argument('source_dir', nargs=1, type=str)
 args = parser.parse_args()
 
 repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
 
-path_re = re.compile(r"(/[^./][^/]+)*\.(py|html?|js|css|png|gif|jpe?g)$")
+path_re = re.compile(r"(/[^./][^/]*)*\.(py|html?|js|css|png|gif|jpe?g)$")
 
 def make_file_list(source_dir, dest_dir='/'):
   for source in os.listdir(source_dir):
@@ -33,18 +36,39 @@ def make_file_list(source_dir, dest_dir='/'):
     elif path_re.match(dest_path):
       yield (source_path, dest_path)
 
+def ensure_dir_exists(dest_path):
+  parent_dir, _ = os.path.split(dest_path)
+  if parent_dir != '/':
+    ensure_dir_exists(parent_dir)
+    repl_control.statement('os.mkdir', parent_dir)
+
 temporary_file_name = "/.temporary"
 
 def sync_files(file_list, file_cache={}):
 
   initialized = False
 
+  if args.delete:
+    extra_set = set(file_cache.keys()) - set(x[1] for x in file_list)
+    if extra_set:
+      print ("initializing ...")
+      repl_control.initialize()
+      repl_control.command("import os")
+      initialized = True
+      
+      for dest_path in extra_set:
+        print("deleting %s" % dest_path)
+        repl_control.statement("os.remove", dest_path)
+        del file_cache[dest_path]
+      
   for source_path, dest_path in file_list:
     source_mtime = os.stat(source_path).st_mtime
-    if source_path in file_cache and file_cache[source_path][0] == source_mtime: continue
+    if dest_path in file_cache and file_cache[dest_path][0] == source_mtime: continue
 
     source_text = open(source_path, "rb").read()
-    if source_path in file_cache and file_cache[source_path][1] == source_text: continue
+    if dest_path in file_cache and file_cache[dest_path][1] == source_text:
+      file_cache[dest_path][0] = source_mtime
+      continue
 
     if not initialized:
       print("initializing ...")
@@ -54,8 +78,8 @@ def sync_files(file_list, file_cache={}):
 
     dest_temp_fh = repl_control.variable('open', temporary_file_name, "wb")
 
-    if source_path in file_cache:
-      cache_text = file_cache[source_path][1]
+    if dest_path in file_cache:
+      cache_text = file_cache[dest_path][1]
 
       remote_fh = repl_control.variable('open', dest_path, "rb")
       sequence_matcher = difflib.SequenceMatcher(None, cache_text, source_text)
@@ -89,17 +113,33 @@ def sync_files(file_list, file_cache={}):
     dest_temp_fh.method('close')
     del dest_temp_fh
 
+    ensure_dir_exists(dest_path)
+
     repl_control.statement('os.remove', dest_path)
     repl_control.statement('os.rename', temporary_file_name, dest_path)
 
-    file_cache[source_path] = [source_mtime, source_text]
+    file_cache[dest_path] = [source_mtime, source_text]
 
   if initialized and args.reset:
     print("resetting ...")
     repl_control.reset()
 
+def delete_files(file_list, dest_dir='/'):
+  file_set = set(x[1] for x in file_list)
+  for dest_file in repl_control.function('os.listdir', dest_dir):
+    dest_path = os.path.join(dest_dir, dest_file)
+    dest_stat = repl_control.function('os.stat', dest_path)
+    if type(dest_stat) is bytes:
+      continue
+    elif stat.S_ISDIR(dest_stat[0]):
+      delete_files(file_list, dest_path)
+    elif path_re.match(dest_path) and dest_path not in file_set:
+        print("deleting %s" % dest_path)
+
+if args.download: download_files(args.source_dir[0])
+
 while True:
-  files = make_file_list(args.source_dir[0])
+  files = list(make_file_list(args.source_dir[0]))
 
   sync_files(files)
       
