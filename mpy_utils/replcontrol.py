@@ -22,11 +22,11 @@ class ReplControl(object):
         
   def initialize(self):
     # break, break, reboot, raw mode
-    self.port.write(b"\x03\x03\x04\x01");
+    self.port.write(b"\x03\x03\x01");
     while (self.port.read(100)): pass
 
   def reset(self):
-    self.port.write(b"\x02\x03\x03")
+    self.port.write(b"\x02\x03\x03\x04")
 
   def command(self, cmd):
     if self.debug: print(">>> %s" % cmd)

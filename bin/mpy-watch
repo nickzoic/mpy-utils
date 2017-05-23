@@ -20,14 +20,16 @@ parser.add_argument('--reset', action='store_true', help='send soft reset (contr
 parser.add_argument('--delete', default=False, action='store_true', help='delete files not in source')
 parser.add_argument('--download', default=False, action='store_true', help='download files first')
 parser.add_argument('--debug', default=False, action='store_true', help='print debugging info')
-parser.add_argument('source_dir', nargs=1, type=str)
+parser.add_argument('source_dir', type=str, default='.')
+parser.add_argument('dest_dir', type=str, default='')
 args = parser.parse_args()
 
 repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
 
 path_re = re.compile(r"(/[^./][^/]*)*\.(py|html?|js|css|png|gif|jpe?g)$")
 
-def make_file_list(source_dir, dest_dir='/'):
+def make_file_list(source_dir, dest_dir=None):
+  if dest_dir is None: dest_dir = args.dest_dir + "/"
   for source in os.listdir(source_dir):
     source_path = os.path.join(source_dir, source)
     dest_path = os.path.join(dest_dir, source)
@@ -42,7 +44,7 @@ def ensure_dir_exists(dest_path):
     ensure_dir_exists(parent_dir)
     repl_control.statement('os.mkdir', parent_dir)
 
-temporary_file_name = "/.temporary"
+temporary_file_name = args.dest_dir + "/.temporary"
 
 def sync_files(file_list, file_cache={}):
 
@@ -60,7 +62,7 @@ def sync_files(file_list, file_cache={}):
         print("deleting %s" % dest_path)
         repl_control.statement("os.remove", dest_path)
         del file_cache[dest_path]
-      
+  
   for source_path, dest_path in file_list:
     source_mtime = os.stat(source_path).st_mtime
     if dest_path in file_cache and file_cache[dest_path][0] == source_mtime: continue
@@ -136,11 +138,11 @@ def delete_files(file_list, dest_dir='/'):
     elif path_re.match(dest_path) and dest_path not in file_set:
         print("deleting %s" % dest_path)
 
-if args.download: download_files(args.source_dir[0])
+if args.download: download_files(args.source_dir)
 
 while True:
-  files = list(make_file_list(args.source_dir[0]))
+  files = list(make_file_list(args.source_dir))
 
   sync_files(files)
-      
+
   time.sleep(1)
