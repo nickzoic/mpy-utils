@@ -1,36 +1,61 @@
 import serial
 import string
+import re
+import socket
 
 class ReplControl(object):
     
   def __init__(self, port='/dev/ttyUSB0', baud=115200, delay=0, debug=False):
-    self.port = serial.Serial(port, baud, timeout=2)
+    if port.startswith('/'):
+      self.port = serial.Serial(port, baud, timeout=2)
+    else:
+      self.port = socket.socket()
+      self.port.connect((port, baud))
+      self.port.settimeout(2)
     self.buffer = b""
     self.delay = delay
     self.debug = debug
     self.initialize()
- 
+
   def response(self, end=b"\x04"):
     while True:
-      bytes_to_read = self.port.inWaiting()
-      self.buffer += self.port.read(bytes_to_read)
       try:
+        if type(self.port) is serial.Serial:
+          bytes_to_read = self.port.inWaiting()
+          self.buffer += self.port.read(bytes_to_read)
+        elif type(self.port) is socket.socket:
+          self.buffer += self.port.recv(1)
         r, self.buffer = self.buffer.split(end, 1)
         return r
-      except ValueError:
+      except (ValueError, socket.timeout):
         pass
-        
+ 
+  def write(self, bb):
+    if type(self.port) is serial.Serial:
+      self.port.write(bb)
+    elif type(self.port) is socket.socket:
+      self.port.send(bb)
+
+  def flush(self):
+    try:
+      if type(self.port) is serial.Serial:
+        while (self.port.read(100)): pass
+      elif type(self.port) is socket.socket:
+        while (self.port.recv(100)): pass
+    except socket.timeout:
+      pass
+
   def initialize(self):
     # break, break, reboot, raw mode
-    self.port.write(b"\x03\x03\x01");
-    while (self.port.read(100)): pass
+    self.write(b"\x03\x03\x01");
+    self.flush()
 
   def reset(self):
-    self.port.write(b"\x02\x03\x03\x04")
+    self.write(b"\x02\x03\x03\x04")
 
   def command(self, cmd):
     if self.debug: print(">>> %s" % cmd)
-    self.port.write(cmd.encode("ASCII") + b"\x04")
+    self.write(cmd.encode("ASCII") + b"\x04")
     ret = self.response()
     err = self.response(b"\x04>")
 
