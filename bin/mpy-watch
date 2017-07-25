@@ -21,7 +21,7 @@ parser.add_argument('--delete', default=False, action='store_true', help='delete
 parser.add_argument('--download', default=False, action='store_true', help='download files first')
 parser.add_argument('--debug', default=False, action='store_true', help='print debugging info')
 parser.add_argument('source_dir', type=str, default='.')
-parser.add_argument('dest_dir', type=str, default='')
+parser.add_argument('dest_dir', type=str, default='/', nargs='?')
 args = parser.parse_args()
 
 repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
@@ -29,13 +29,13 @@ repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, deb
 path_re = re.compile(r"(/[^./][^/]*)*\.(py|html?|js|css|png|gif|jpe?g)$")
 
 def make_file_list(source_dir, dest_dir=None):
-  if dest_dir is None: dest_dir = args.dest_dir + "/"
+  if dest_dir is None: dest_dir = args.dest_dir
   for source in os.listdir(source_dir):
     source_path = os.path.join(source_dir, source)
     dest_path = os.path.join(dest_dir, source)
     if os.path.isdir(source_path):
       yield from make_file_list(source_path, dest_path)
-    elif path_re.match(dest_path):
+    elif path_re.search(dest_path):
       yield (source_path, dest_path)
 
 def ensure_dir_exists(dest_path):
@@ -44,7 +44,7 @@ def ensure_dir_exists(dest_path):
     ensure_dir_exists(parent_dir)
     repl_control.statement('os.mkdir', parent_dir)
 
-temporary_file_name = args.dest_dir + "/.temporary"
+temporary_file_name = os.path.join(args.dest_dir, ".temporary")
 
 def sync_files(file_list, file_cache={}):
 
@@ -59,7 +59,7 @@ def sync_files(file_list, file_cache={}):
       initialized = True
       
       for dest_path in extra_set:
-        print("deleting %s" % dest_path)
+        print("deleting %s" % repr(dest_path))
         repl_control.statement("os.remove", dest_path)
         del file_cache[dest_path]
   
@@ -85,7 +85,7 @@ def sync_files(file_list, file_cache={}):
 
       remote_fh = repl_control.variable('open', dest_path, "rb")
       sequence_matcher = difflib.SequenceMatcher(None, cache_text, source_text)
-      print("patching %s => %s (%d bytes, %f ratio)" % (source_path, dest_path, len(source_text), sequence_matcher.ratio()))
+      print("patching %s => %s (%d bytes, %f ratio)" % (repr(source_path), repr(dest_path), len(source_text), sequence_matcher.ratio()))
 
       for tag, i1, i2, j1, j2 in sequence_matcher.get_opcodes():
         if tag == 'replace' or tag == 'insert':
@@ -105,7 +105,7 @@ def sync_files(file_list, file_cache={}):
       del remote_fh
 
     else:
-      print("copying %s => %s (%d bytes)" % (source_path, dest_path, len(source_text)))
+      print("copying %s => %s (%d bytes)" % (repr(source_path), repr(dest_path), len(source_text)))
 
       for x in range(0, len(source_text), 50):
         dest_temp_fh.method('write', source_text[x:x+50])
@@ -142,7 +142,6 @@ if args.download: download_files(args.source_dir)
 
 while True:
   files = list(make_file_list(args.source_dir))
-
   sync_files(files)
 
   time.sleep(1)
