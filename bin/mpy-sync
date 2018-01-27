@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import serial
 import time
 import argparse
 import os.path
@@ -18,7 +17,7 @@ parser.add_argument('--debug', default=False, action='store_true', help='print d
 parser.add_argument('files', nargs='*', type=str)
 args = parser.parse_args()
 
-repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
+repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, reset=args.reset, debug=args.debug))
 
 repl_control.command('import os')
 
@@ -33,16 +32,16 @@ def sync_files(files):
 def copy_file(source, dest):
     print("copying %s => %s" % (repr(source), repr(dest)))
     fh = open(source, "rb")
-    rfh = repl_control.variable('open', '/'+dest, "wb")
+    rfh = repl_control.variable('open', '/' + dest, "wb")
     while True:
         s = fh.read(50)
-        if len(s) == 0: break
+        if len(s) == 0:
+            break
         rfh.method('write', s)
-        time.sleep(args.delay/1000.0)
+        time.sleep(args.delay / 1000.0)
     rfh.method('flush')
     rfh.method('close')
 
 
-sync_files([ (f, os.path.split(f)[1]) for f in args.files] or [('.', '/')])
+sync_files([(f, os.path.split(f)[1]) for f in args.files] or [('.', '/')])
 
-if args.reset: repl_control.reset()

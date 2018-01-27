@@ -6,9 +6,6 @@ import os
 
 BUFSIZ = 50
 
-def join_path(base, path):
-    if path == '/': return base
-    else: return base + path
 
 class ReplFuseOps(fuse.Operations):
     def __init__(self, remote, base_path=''):
@@ -21,35 +18,35 @@ class ReplFuseOps(fuse.Operations):
     # ==================
 
     def getattr(self, path, fh=None):
-        s = self.remote.function('os.stat', join_path(self.base_path, path))
+        s = self.remote.function('os.stat', os.path.join(self.base_path, path))
         if type(s) is bytes:
-           raise fuse.FuseOSError(errno.ENOENT)
+            raise fuse.FuseOSError(errno.ENOENT)
 
-        mode = (stat.S_IFDIR | 0o750) if stat.S_ISDIR(s[0]) else (stat.S_IFREG | 0o640);
+        mode = (stat.S_IFDIR | 0o750) if stat.S_ISDIR(s[0]) else (stat.S_IFREG | 0o640)
         return {
-          'st_mode': mode,
-          'st_nlink': 2,
-          'st_size': s[6],
-          'st_uid': os.getuid(),
-          'st_gid': os.getgid()
+            'st_mode': mode,
+            'st_nlink': 2,
+            'st_size': s[6],
+            'st_uid': os.getuid(),
+            'st_gid': os.getgid()
         }
 
     def readdir(self, path, fh):
         dirents = ['.', '..']
-        dirents.extend(self.remote.function('os.listdir', join_path(self.base_path, path)))
+        dirents.extend(self.remote.function('os.listdir', os.path.join(self.base_path, path)))
         return dirents
 
     def readlink(self, path):
         return path
 
     def rmdir(self, path):
-        return self.remote.function('os.rmdir', join_path(self.base_path, path))
+        return self.remote.function('os.rmdir', os.path.join(self.base_path, path))
 
     def mkdir(self, path, mode):
-        return self.remote.function('os.mkdir', join_path(self.base_path, path))
+        return self.remote.function('os.mkdir', os.path.join(self.base_path, path))
 
     def statfs(self, path):
-        r = self.remote.function('os.statvfs', join_path(self.base_path, path))
+        r = self.remote.function('os.statvfs', os.path.join(self.base_path, path))
         return {
             "f_bsize": r[0],
             "f_frsize": r[1],
@@ -60,24 +57,27 @@ class ReplFuseOps(fuse.Operations):
         }
 
     def unlink(self, path):
-        return self.remote.function('os.remove', join_path(self.base_path, path))
+        return self.remote.function('os.remove', os.path.join(self.base_path, path))
 
     def rename(self, old, new):
-        return self.remote.function('os.rename', join_path(self.base_path, old), join_path(self.base_path, new))
+        return self.remote.function('os.rename', os.path.join(self.base_path, old), os.path.join(self.base_path, new))
 
     # File methods
     # ============
 
     def _open(self, path, mode):
         num = len(self.filehandles)
-        var = self.remote.variable('open', join_path(self.base_path, path), mode)
-        self.filehandles.append(( var, path ))
+        var = self.remote.variable('open', os.path.join(self.base_path, path), mode)
+        self.filehandles.append((var, path))
         return num
 
     def open(self, path, flags):
-        if flags & posix.O_WRONLY: mode = "wb"
-        elif flags & posix.O_RDWR: mode = "rb+"
-        else: mode = "rb"
+        if flags & posix.O_WRONLY:
+            mode = "wb"
+        elif flags & posix.O_RDWR:
+            mode = "rb+"
+        else:
+            mode = "rb"
         return self._open(path, mode)
 
     def create(self, path, mode, fi=None):
@@ -87,9 +87,10 @@ class ReplFuseOps(fuse.Operations):
         self.filehandles[fh][0].method('seek', offset)
         buf = b''
         while len(buf) < length:
-            size = length - len(buf) if length - len(buf) < BUFSIZ else BUFSIZ;
+            size = length - len(buf) if length - len(buf) < BUFSIZ else BUFSIZ
             r = self.filehandles[fh][0].method('read', int(size))
-            if r is None or len(r) == 0: break
+            if r is None or len(r) == 0:
+                break
             buf += r
         return buf
 
@@ -98,11 +99,11 @@ class ReplFuseOps(fuse.Operations):
         self.filehandles[fh][0].method('seek', offset)
         total = 0
         while total < length:
-            size = length - total if length - total < BUFSIZ else BUFSIZ;
-            total += self.filehandles[fh][0].method('write', buf[total:total+size])
+            size = length - total if length - total < BUFSIZ else BUFSIZ
+            total += self.filehandles[fh][0].method('write', buf[total:total + size])
         return total
 
-    def truncate(self, path, size):
+    def truncate(self, path, size, fh=None):
         if size == 0:
             fh = self._open(path, "wb")
             self.filehandles[fh][0].method('close')

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import serial
 import time
 import argparse
 import os.path
@@ -18,7 +17,7 @@ parser.add_argument('--reset', action='store_true', help='send soft reset (contr
 parser.add_argument('files', nargs='*', type=argparse.FileType('rb'))
 args = parser.parse_args()
 
-repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
+repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, reset=args.reset, debug=args.debug)
 
 for fh in args.files:
     path, name = os.path.split(fh.name)
@@ -31,5 +30,3 @@ for fh in args.files:
         time.sleep(args.delay/1000.0)
     rfh.method('flush')
     rfh.method('close')
-
-if args.reset: repl_control.reset()
