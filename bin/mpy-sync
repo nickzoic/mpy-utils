@@ -20,6 +20,7 @@ args = parser.parse_args()
 
 repl_control = ReplControl(port=args.port, baud=args.baud, delay=args.delay, debug=args.debug)
 
+repl_control.command('import os')
 
 def sync_files(files):
   for source, dest in files:
