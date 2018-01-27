@@ -67,13 +67,13 @@ class ReplFuseOps(fuse.Operations):
 
     # File methods
     # ============
-   
+
     def _open(self, path, mode):
         num = len(self.filehandles)
         var = self.remote.variable('open', join_path(self.base_path, path), mode)
         self.filehandles.append(( var, path ))
         return num
- 
+
     def open(self, path, flags):
         if flags & posix.O_WRONLY: mode = "wb"
         elif flags & posix.O_RDWR: mode = "rb+"
