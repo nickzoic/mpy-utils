@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+#DPKG_EXPORT_BUILDFLAGS = 1
+#include /usr/share/dpkg/default.mk
+
+export PYBUILD_NAME=mpy-utils
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
