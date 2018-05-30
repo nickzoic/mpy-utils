@@ -6,6 +6,7 @@ import os
 
 BUFSIZ = 50
 
+
 class ReplFuseOps(fuse.Operations):
     def __init__(self, remote, base_path=""):
         self.remote = remote

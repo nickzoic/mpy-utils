@@ -29,6 +29,7 @@ repl_control = ReplControl(
 
 repl_control.command("import os")
 
+
 def sync_files(files):
     for source, dest in files:
         if os.path.isdir(source):
@@ -42,6 +43,7 @@ def sync_files(files):
             )
         else:
             copy_file(source, dest)
+
 
 def copy_file(source, dest):
     print("copying %s => %s" % (repr(source), repr(dest)))
