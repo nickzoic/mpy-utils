@@ -1,9 +1,9 @@
 import serial
 import string
 
-class ReplControl(object):
 
-    def __init__(self, port='/dev/ttyUSB0', baud=115200, delay=0, debug=False):
+class ReplControl(object):
+    def __init__(self, port="/dev/ttyUSB0", baud=115200, delay=0, debug=False):
         self.port = serial.Serial(port, baud, timeout=2)
         self.buffer = b""
         self.delay = delay
@@ -22,24 +22,28 @@ class ReplControl(object):
 
     def initialize(self):
         # break, break, reboot, raw mode
-        self.port.write(b"\x03\x03\x01");
-        while (self.port.read(100)): pass
+        self.port.write(b"\x03\x03\x01")
+        while self.port.read(100):
+            pass
 
     def reset(self):
         self.port.write(b"\x02\x03\x03\x04")
 
     def command(self, cmd):
-        if self.debug: print(">>> %s" % cmd)
+        if self.debug:
+            print(">>> %s" % cmd)
         self.port.write(cmd.encode("ASCII") + b"\x04")
         ret = self.response()
         err = self.response(b"\x04>")
 
-        if ret.startswith(b'OK'):
+        if ret.startswith(b"OK"):
             if err:
-                if self.debug: print("<<< %s" % err)
+                if self.debug:
+                    print("<<< %s" % err)
                 return err
             elif len(ret) > 2:
-                if self.debug: print("<<< %s" % ret[2:])
+                if self.debug:
+                    print("<<< %s" % ret[2:])
                 try:
                     return eval(ret[2:], {"__builtins__": {}}, {})
                 except SyntaxError as e:
@@ -60,7 +64,9 @@ class ReplControl(object):
 
 class ReplControlVariable(object):
 
-    names = [ '_%s%s' % (x,y) for x in string.ascii_lowercase for y in string.ascii_lowercase ]
+    names = [
+        "_%s%s" % (x, y) for x in string.ascii_lowercase for y in string.ascii_lowercase
+    ]
 
     def __init__(self, control, func, *args):
         self.control = control
