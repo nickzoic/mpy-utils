@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import serial
 import time
 import argparse
 import os.path
@@ -25,11 +24,10 @@ parser.add_argument("files", nargs="*", type=str)
 args = parser.parse_args()
 
 repl_control = ReplControl(
-    port=args.port, baud=args.baud, delay=args.delay, debug=args.debug
+    port=args.port, baud=args.baud, delay=args.delay, debug=args.debug, reset=args.reset
 )
 
 repl_control.command("import os")
-
 
 def sync_files(files):
     for source, dest in files:
@@ -44,7 +42,6 @@ def sync_files(files):
             )
         else:
             copy_file(source, dest)
-
 
 def copy_file(source, dest):
     print("copying %s => %s" % (repr(source), repr(dest)))
@@ -61,6 +58,3 @@ def copy_file(source, dest):
 
 
 sync_files([(f, os.path.split(f)[1]) for f in args.files] or [(".", "/")])
-
-if args.reset:
-    repl_control.reset()

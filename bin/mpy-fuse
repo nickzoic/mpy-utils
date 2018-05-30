@@ -2,6 +2,7 @@
 
 import argparse
 import fuse
+import os
 
 from mpy_utils.replcontrol import ReplControl
 from mpy_utils.replfuseops import ReplFuseOps
@@ -16,11 +17,20 @@ parser.add_argument(
 parser.add_argument(
     "--debug", default=False, action="store_true", help="print debugging info"
 )
+parser.add_argument(
+    "--reset", default=True, action="store_false", help="resets after unmounting"
+)
 parser.add_argument("mount_point")
 args = parser.parse_args()
 
+try:
+    os.makedirs(args.mount_point, exist_ok=True)
+except FileExistsError:
+    print("mount_point is not a directory")
+    exit(1)
+
 repl_control = ReplControl(
-    port=args.port, baud=args.baud, delay=args.delay, debug=args.debug
+    port=args.port, baud=args.baud, delay=args.delay, debug=args.debug, reset=args.reset
 )
 
 fuse.FUSE(
