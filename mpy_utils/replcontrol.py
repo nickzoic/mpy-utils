@@ -4,7 +4,9 @@ import time
 
 
 class ReplControl(object):
-    def __init__(self, port='/dev/ttyUSB0', baud=115200, delay=0, debug=False, reset=True):
+    def __init__(
+        self, port="/dev/ttyUSB0", baud=115200, delay=0, debug=False, reset=True
+    ):
         self.port = serial.Serial(port, baud, timeout=2)
         self.buffer = b""
         self.delay = delay
@@ -51,7 +53,7 @@ class ReplControl(object):
         ret = self.response()
         err = self.response(b"\x04>")
 
-        if ret.startswith(b'OK'):
+        if ret.startswith(b"OK"):
             if err:
                 if self.debug:
                     print("<<< %s" % err)
@@ -82,7 +84,7 @@ class ReplControlVariable(object):
 
     def __init__(self, control, func, *args):
         self.control = control
-        self.name = '__v%d' % self.__class__.counter
+        self.name = "__v%d" % self.__class__.counter
         self.__class__.counter += 1
         self.control.statement("%s=%s" % (self.name, func), *args)
 
