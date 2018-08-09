@@ -30,6 +30,8 @@ class ReplControl(object):
                 pass
 
     def initialize(self):
+        self.port.dtr = 0
+        self.port.rts = 0
         # break, break, raw mode, reboot
         self.port.write(b"\x03\x03\x01\x04")
         start = time.time()
@@ -40,7 +42,7 @@ class ReplControl(object):
             elif time.time() - start > 3:
                 if self.debug:
                     print("Forcefully breaking the boot.py")
-                self.port.write(b"\x03\x03")
+                self.port.write(b"\x03\x03\x01\x04")
             time.sleep(self.delay / 1000.0)
         self.port.flushInput()
 
