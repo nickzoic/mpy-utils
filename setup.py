@@ -2,8 +2,9 @@ from setuptools import setup
 
 setup(
     name="mpy-utils",
-    version="0.1.9",
+    version="0.1.10",
     description="MicroPython development utility programs",
+    long_description="MicroPython development utility programs",
     url="http://github.com/nickzoic/mpy-utils/",
     author="Nick Moore",
     author_email="nick@zoic.org",
