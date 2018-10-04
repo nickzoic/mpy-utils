@@ -1,4 +1,4 @@
-# mpy-utils v0.1.8
+# mpy-utils v0.1.10
 
 Utility programs for Micropython ...
 
@@ -26,4 +26,6 @@ This will hopefully prevent me from ever having to think about source code forma
 * [Nick Moore](https://github.com/nickzoic)
 * [Paul Dwerryhouse](https://github.com/pdwerryhouse)
 * [Umut Karcı](https://github.com/Cediddi)
+* [Eric Poulsen](https://github.com/MrSurly)
+* [Jeff Gough](https://github.com/jeffmakes)
 
