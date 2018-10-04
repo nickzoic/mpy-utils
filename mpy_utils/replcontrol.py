@@ -44,7 +44,7 @@ class ReplControl(object):
                     print("Forcefully breaking the boot.py")
                 self.port.write(b"\x03\x03\x01\x04")
             time.sleep(self.delay / 1000.0)
-        self.port.flushInput()
+        self.port.reset_input_buffer()
 
     def reset(self):
         self.port.write(b"\x02\x03\x03\x04")
