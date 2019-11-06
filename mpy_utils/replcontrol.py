@@ -3,6 +3,8 @@ import string
 import atexit
 import time
 import sys
+import os
+import fcntl
 
 
 class ReplIOSerial(object):
@@ -27,6 +29,37 @@ class ReplIOSerial(object):
 
     def flushinput(self):
         return self.port.reset_input_buffer()
+
+
+class ReplIOFileHandle(object):
+    def __init__(self, infh=sys.stdin, outfh=sys.stdout):
+        self.infh = infh
+        self.outfh = outfh
+
+        # Set input to non-blocking
+        fd = self.infh.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+    def readbytes(self):
+        # Just keep trying to read a byte until there's none left to read
+        buf = b""
+        while True:
+            data = self.infh.buffer.read(1)
+            if data == None:
+                break
+            buf += data
+        return buf
+
+    def writebytes(self, data):
+        self.outfh.buffer.write(data)
+        self.outfh.buffer.flush()
+
+    def readall(self):
+        return self.readbytes()
+
+    def flushinput(self):
+        return self.readbytes()
 
 
 class ReplControl(object):
