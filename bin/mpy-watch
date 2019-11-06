@@ -7,6 +7,7 @@ import os
 import re
 import difflib
 import stat
+import sys
 
 from mpy_utils.replcontrol import ReplControl, ReplIOSerial
 
@@ -76,13 +77,13 @@ def sync_files(file_list, file_cache={}):
     if args.delete:
         extra_set = set(file_cache.keys()) - set(x[1] for x in file_list)
         if extra_set:
-            print("initializing ...")
+            log("initializing ...")
             repl_control.initialize()
             repl_control.command("import os")
             initialized = True
 
             for dest_path in extra_set:
-                print("deleting %s" % repr(dest_path))
+                log("deleting %s" % repr(dest_path))
                 repl_control.statement("os.remove", dest_path)
                 del file_cache[dest_path]
 
@@ -97,7 +98,7 @@ def sync_files(file_list, file_cache={}):
             continue
 
         if not initialized:
-            print("initializing ...")
+            log("initializing ...")
             repl_control.initialize()
             repl_control.command("import os")
             initialized = True
@@ -109,7 +110,7 @@ def sync_files(file_list, file_cache={}):
 
             remote_fh = repl_control.variable("open", dest_path, "rb")
             sequence_matcher = difflib.SequenceMatcher(None, cache_text, source_text)
-            print(
+            log(
                 "patching %s => %s (%d bytes, %f ratio)"
                 % (
                     repr(source_path),
@@ -140,7 +141,7 @@ def sync_files(file_list, file_cache={}):
             del remote_fh
 
         else:
-            print(
+            log(
                 "copying %s => %s (%d bytes)"
                 % (repr(source_path), repr(dest_path), len(source_text))
             )
@@ -161,7 +162,7 @@ def sync_files(file_list, file_cache={}):
         file_cache[dest_path] = [source_mtime, source_text]
 
     if initialized and args.reset:
-        print("resetting ...")
+        log("resetting ...")
         repl_control.reset()
 
 
@@ -175,7 +176,11 @@ def delete_files(file_list, dest_dir="/"):
         elif stat.S_ISDIR(dest_stat[0]):
             delete_files(file_list, dest_path)
         elif path_re.match(dest_path) and dest_path not in file_set:
-            print("deleting %s" % dest_path)
+            log("deleting %s" % dest_path)
+
+
+def log(msg):
+    print(msg, file=sys.stderr)
 
 
 if args.download:

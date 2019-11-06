@@ -3,6 +3,7 @@
 import time
 import argparse
 import os.path
+import sys
 
 from mpy_utils.replcontrol import ReplControl, ReplIOSerial
 
@@ -49,7 +50,7 @@ def sync_files(files):
 
 
 def copy_file(source, dest):
-    print("copying %s => %s" % (repr(source), repr(dest)))
+    print("copying %s => %s" % (repr(source), repr(dest)), file=sys.stderr)
     fh = open(source, "rb")
     rfh = repl_control.variable("open", "/" + dest, "wb")
     while True:

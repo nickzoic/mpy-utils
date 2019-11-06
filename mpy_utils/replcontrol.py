@@ -2,6 +2,7 @@ import serial
 import string
 import atexit
 import time
+import sys
 
 
 class ReplIOSerial(object):
@@ -59,7 +60,7 @@ class ReplControl(object):
                 break
             elif time.time() - start > 3:
                 if self.debug:
-                    print("Forcefully breaking the boot.py")
+                    self.log("Forcefully breaking the boot.py")
                 self.io.writebytes(b"\x03\x03\x01\x04")
             time.sleep(self.delay / 1000.0)
         self.io.flushinput()
@@ -69,7 +70,7 @@ class ReplControl(object):
 
     def command(self, cmd):
         if self.debug:
-            print(">>> %s" % cmd)
+            self.log(">>> %s" % cmd)
         self.io.writebytes(cmd.encode("ASCII") + b"\x04")
         time.sleep(self.delay / 1000.0)
         ret = self.response()
@@ -78,11 +79,11 @@ class ReplControl(object):
         if ret.startswith(b"OK"):
             if err:
                 if self.debug:
-                    print("<<< %s" % err)
+                    self.log("<<< %s" % err)
                 return err
             elif len(ret) > 2:
                 if self.debug:
-                    print("<<< %s" % ret[2:])
+                    self.log("<<< %s" % ret[2:])
                 try:
                     return eval(ret[2:], {"__builtins__": {}}, {})
                 except SyntaxError as e:
@@ -99,6 +100,9 @@ class ReplControl(object):
 
     def variable(self, func, *args):
         return ReplControlVariable(self, func, *args)
+
+    def log(self, msg):
+        print(msg, file=sys.stderr)
 
 
 class ReplControlVariable(object):
