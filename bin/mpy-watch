@@ -8,7 +8,7 @@ import re
 import difflib
 import stat
 
-from mpy_utils.replcontrol import ReplControl
+from mpy_utils.replcontrol import ReplControl, ReplIOSerial
 
 parser = argparse.ArgumentParser(
     description="upload files to a device using only the REPL"
@@ -34,9 +34,14 @@ parser.add_argument("source_dir", type=str, default=".")
 parser.add_argument("dest_dir", type=str, default="/", nargs="?")
 args = parser.parse_args()
 
+
 repl_control = ReplControl(
-    port=args.port, baud=args.baud, delay=args.delay, debug=args.debug
+    io=ReplIOSerial(port=args.port, baud=args.baud, delay=args.delay),
+    delay=args.delay,
+    debug=args.debug,
+    reset=args.reset,
 )
+
 
 path_re = re.compile(r"(/[^./][^/]*)*\.(py|html?|js|css|png|gif|jpe?g)$")
 

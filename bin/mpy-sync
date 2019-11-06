@@ -4,7 +4,7 @@ import time
 import argparse
 import os.path
 
-from mpy_utils.replcontrol import ReplControl
+from mpy_utils.replcontrol import ReplControl, ReplIOSerial
 
 parser = argparse.ArgumentParser(
     description="upload files to a device using only the REPL"
@@ -24,7 +24,10 @@ parser.add_argument("files", nargs="*", type=str)
 args = parser.parse_args()
 
 repl_control = ReplControl(
-    port=args.port, baud=args.baud, delay=args.delay, debug=args.debug, reset=args.reset
+    io=ReplIOSerial(port=args.port, baud=args.baud, delay=args.delay),
+    delay=args.delay,
+    debug=args.debug,
+    reset=args.reset,
 )
 
 repl_control.command("import os")

@@ -29,10 +29,8 @@ class ReplIOSerial(object):
 
 
 class ReplControl(object):
-    def __init__(
-        self, port="/dev/ttyUSB0", baud=115200, delay=0, debug=False, reset=True
-    ):
-        self.io = ReplIOSerial(port, baud, delay)
+    def __init__(self, io, delay=0, debug=False, reset=True):
+        self.io = io
         self.buffer = b""
         self.delay = delay
         self.debug = debug

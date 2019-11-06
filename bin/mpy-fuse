@@ -4,7 +4,7 @@ import argparse
 import fuse
 import os
 
-from mpy_utils.replcontrol import ReplControl
+from mpy_utils.replcontrol import ReplControl, ReplIOSerial
 from mpy_utils.replfuseops import ReplFuseOps
 
 parser = argparse.ArgumentParser(description="FUSE mount a device using only the REPL")
@@ -30,7 +30,10 @@ except FileExistsError:
     exit(1)
 
 repl_control = ReplControl(
-    port=args.port, baud=args.baud, delay=args.delay, debug=args.debug, reset=args.reset
+    io=ReplIOSerial(port=args.port, baud=args.baud, delay=args.delay),
+    delay=args.delay,
+    debug=args.debug,
+    reset=args.reset,
 )
 
 fuse.FUSE(
