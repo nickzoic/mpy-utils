@@ -9,13 +9,16 @@ import difflib
 import stat
 import sys
 
-from mpy_utils.replcontrol import ReplControl, ReplIOSerial
+from mpy_utils.replcontrol import ReplControl, ReplIOFileHandle, ReplIOSerial
 
 parser = argparse.ArgumentParser(
     description="upload files to a device using only the REPL"
 )
 parser.add_argument("--port", default="/dev/ttyUSB0", help="serial port device")
 parser.add_argument("--baud", default=115200, type=int, help="port speed in baud")
+parser.add_argument(
+    "--pipe", action="store_true", help="use stdin/stdout instead of serial port"
+)
 parser.add_argument(
     "--delay", default=100.0, type=float, help="delay between lines (ms)"
 )
@@ -35,12 +38,13 @@ parser.add_argument("source_dir", type=str, default=".")
 parser.add_argument("dest_dir", type=str, default="/", nargs="?")
 args = parser.parse_args()
 
+if args.pipe:
+    repl_io = ReplIOFileHandle(infh=sys.stdin, outfh=sys.stdout)
+else:
+    repl_io = ReplIOSerial(port=args.port, baud=args.baud, delay=args.delay)
 
 repl_control = ReplControl(
-    io=ReplIOSerial(port=args.port, baud=args.baud, delay=args.delay),
-    delay=args.delay,
-    debug=args.debug,
-    reset=args.reset,
+    io=repl_io, delay=args.delay, debug=args.debug, reset=args.reset,
 )
 
 
