@@ -50,4 +50,5 @@ This will hopefully prevent me from ever having to think about source code forma
 * [Umut Karcı](https://github.com/Cediddi)
 * [Eric Poulsen](https://github.com/MrSurly)
 * [Jeff Gough](https://github.com/jeffmakes)
+* [Stephen Thirlwall](https://github.com/sdt)
 
