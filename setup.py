@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="mpy-utils",
-    version="0.1.10",
+    version="0.1.11",
     description="MicroPython development utility programs",
     long_description="MicroPython development utility programs",
     url="http://github.com/nickzoic/mpy-utils/",
