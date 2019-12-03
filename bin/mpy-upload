@@ -24,6 +24,9 @@ parser.add_argument(
 parser.add_argument(
     "--reset", action="store_true", help="send soft reset (control-D) after upload"
 )
+parser.add_argument(
+    "--dest", default="/", help="destination directory on device"
+)
 parser.add_argument("files", nargs="*", type=argparse.FileType("rb"))
 args = parser.parse_args()
 
@@ -36,9 +39,11 @@ repl_control = ReplControl(
     io=repl_io, delay=args.delay, debug=args.debug, reset=args.reset,
 )
 
+rpath, rname = os.path.split(args.dest)
 for fh in args.files:
     path, name = os.path.split(fh.name)
-    rfh = repl_control.variable("open", name, "w")
+
+    rfh = repl_control.variable("open", os.path.join(rpath, rname or name), "w")
 
     while True:
         s = fh.read(50)
