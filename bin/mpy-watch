@@ -55,6 +55,7 @@ def make_file_list(source_dir, dest_dir=None):
     if dest_dir is None:
         dest_dir = args.dest_dir
     for source in os.listdir(source_dir):
+        if source.startswith('.'): next
         source_path = os.path.join(source_dir, source)
         dest_path = os.path.join(dest_dir, source)
         if os.path.isdir(source_path):
