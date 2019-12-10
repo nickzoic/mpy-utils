@@ -46,7 +46,7 @@ for fh in args.files:
     rfh = repl_control.variable("open", os.path.join(rpath, rname or name), "w")
 
     while True:
-        s = fh.read(50)
+        s = fh.read(150)
         if len(s) == 0:
             break
         rfh.method("write", s)

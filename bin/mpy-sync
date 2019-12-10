@@ -59,7 +59,7 @@ def copy_file(source, dest):
     fh = open(source, "rb")
     rfh = repl_control.variable("open", "/" + dest, "wb")
     while True:
-        s = fh.read(50)
+        s = fh.read(150)
         if len(s) == 0:
             break
         rfh.method("write", s)
