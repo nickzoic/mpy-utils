@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+
+import serial
+import time
+import argparse
+import os
+import re
+import difflib
+import stat
+import sys
+
+from mpy_utils.replcontrol import ReplControl, ReplIOFileHandle, ReplIOSerial
+
+parser = argparse.ArgumentParser(
+    description="upload files to a device using only the REPL"
+)
+parser.add_argument("--port", default="/dev/ttyUSB0", help="serial port device")
+parser.add_argument("--baud", default=115200, type=int, help="port speed in baud")
+
+args = parser.parse_args()
+
+repl_io = ReplIOSerial(port=args.port, baud=args.baud)
+
+ReplControl(io=repl_io).reset()
