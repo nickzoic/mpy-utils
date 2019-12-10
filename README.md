@@ -1,11 +1,13 @@
-# mpy-utils v0.1.10
+# mpy-utils v0.1.12
 
 Utility programs for Micropython ...
 
 * bin/mpy-upload : copy files in to a device using only the REPL.
+* bin/mpy-download : copy files from a device using only the REPL.
 * bin/mpy-sync : copy whole directory structure
 * bin/mpy-fuse : mount a device into the filesystem using FUSE ...
 * bin/mpy-watch : watch a directory for changes and send the diffs
+* bin/mpy-reset : just remotely reset the device
 
 [This package is also available through PyPI](https://pypi.python.org/pypi/mpy-utils/)
 

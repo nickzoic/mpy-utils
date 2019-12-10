@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+
+import time
+import argparse
+import os.path
+import sys
+
+from mpy_utils.replcontrol import ReplControl, ReplIOFileHandle, ReplIOSerial
+
+parser = argparse.ArgumentParser(
+    description="upload files to a device using only the REPL"
+)
+parser.add_argument("--port", default="/dev/ttyUSB0", help="serial port device")
+parser.add_argument("--baud", default=115200, type=int, help="port speed in baud")
+parser.add_argument(
+    "--pipe", action="store_true", help="use stdin/stdout instead of serial port"
+)
+parser.add_argument(
+    "--delay", default=100.0, type=float, help="delay between lines (ms)"
+)
+parser.add_argument(
+    "--debug", default=False, action="store_true", help="print debugging info"
+)
+parser.add_argument(
+    "--reset", action="store_true", help="send soft reset (control-D) after upload"
+)
+parser.add_argument(
+    "--dest", default="/", help="destination directory on device"
+)
+parser.add_argument("files", nargs="*", type=argparse.FileType("wb"))
+args = parser.parse_args()
+
+if args.pipe:
+    repl_io = ReplIOFileHandle(infh=sys.stdin, outfh=sys.stdout)
+else:
+    repl_io = ReplIOSerial(port=args.port, baud=args.baud, delay=args.delay)
+
+repl_control = ReplControl(
+    io=repl_io, delay=args.delay, debug=args.debug, reset=args.reset,
+)
+
+rpath, rname = os.path.split(args.dest)
+for fh in args.files:
+    path, name = os.path.split(fh.name)
+
+    rfh = repl_control.variable("open", os.path.join(rpath, rname or name), "rb")
+
+    while True:
+        s = rfh.method("read", 150)
+        if len(s) == 0:
+            break
+        fh.write(s)
+        time.sleep(args.delay / 1000.0)
+
+    rfh.method("close")
+
+    fh.flush()
+    fh.close()
