@@ -1,7 +1,7 @@
 import errno
 import stat
 import posix
-import fuse
+import mfusepy as fuse
 import os
 
 BUFSIZ = 50

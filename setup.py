@@ -11,7 +11,7 @@ setup(
     license="MIT",
     packages=["mpy_utils"],
     scripts=["bin/mpy-fuse", "bin/mpy-upload", "bin/mpy-download", "bin/mpy-sync", "bin/mpy-watch", "bin/mpy-reset"],
-    install_requires=["fusepy>=3", "pyserial>=3"],
+    install_requires=["mfusepy>=1.1", "pyserial>=3"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Console",
