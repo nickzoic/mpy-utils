@@ -1,4 +1,4 @@
-# mpy-utils v0.1.12
+# mpy-utils v0.1.14
 
 Utility programs for Micropython ...
 
